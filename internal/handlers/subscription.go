@@ -1,54 +1,129 @@
 package handlers
 
 import (
-	"fmt"
-	"log"
-	"net/http"
-	"service/internal/database"
-	"service/internal/models"
+    "net/http"
+    "time"
 
-	"github.com/gin-gonic/gin"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"gorm.io/gorm"
-	"fmt"
+    "github.com/gin-gonic/gin"
+    "github.com/google/uuid"
+
+    "service/internal/database"
+    "service/internal/models"
 )
 
-func CreateEntry(c *gin.Context){
-	var entry models.Subscription
-	if err := c.ShouldBindJSON(&entry); err != nil{
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":"Invalid input format",
-			"details": err.Error(),
-		})
-		log.Printf("Accured error %s", err.Error())
-	}
-	db := database.InitDB()
-    if db == nil {
-        log.Println("Database connection is nil")
-        status.Error(codes.Internal, "database connection error")
+var db = database.GetDB() 
+
+func CreateSubscription(c *gin.Context) {
+    var sub models.Subscription
+    if err := c.ShouldBindJSON(&sub); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
     }
-	result := db.Create(&entry)
-    if result.Error != nil {
-        log.Printf("Failed to create entry: %v", result.Error)
-        status.Error(codes.Internal, "failed to create entry")
+
+ 
+    if sub.ID == uuid.Nil {
+        sub.ID = uuid.New()
     }
+    if err := db.Create(&sub).Error; err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    c.JSON(http.StatusCreated, sub)
 }
 
-func GetEntryById(c *gin.Context) {
-	id := c.Query("id")
-	var entry models.Subscription
-	if id == "" {
-    	status.Error(codes.InvalidArgument, "entry ID is required")
+ 
+func GetSubscription(c *gin.Context) {
+    id := c.Param("id")
+    var sub models.Subscription
+
+    if err := db.First(&sub, "id = ?", id).Error; err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "subscription not found"})
+        return
     }
-	db := database.InitDB()
-    if db == nil {
-        log.Println("Database connection is nil")
-        status.Error(codes.Internal, "database connection error")
+    c.JSON(http.StatusOK, sub)
+}
+
+ 
+func UpdateSubscription(c *gin.Context) {
+    id := c.Param("id")
+    var sub models.Subscription
+
+    if err := db.First(&sub, "id = ?", id).Error; err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "subscription not found"})
+        return
     }
-	result:= db.Where("id = ?", id).First(&entry)
-	if result ==nil{
-		fmt.Print("lox")
-	}
-	c.JSON(200, entry)
+
+    var input models.Subscription
+    if err := c.ShouldBindJSON(&input); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+ 
+    sub.ServiceName = input.ServiceName
+    sub.Price = input.Price
+    sub.UserID = input.UserID
+    sub.StartDate = input.StartDate
+    sub.EndDate = input.EndDate
+
+    if err := db.Save(&sub).Error; err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    c.JSON(http.StatusOK, sub)
+}
+
+ 
+func DeleteSubscription(c *gin.Context) {
+    id := c.Param("id")
+    if err := db.Delete(&models.Subscription{}, "id = ?", id).Error; err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    c.JSON(http.StatusOK, gin.H{"status": "deleted"})
+}
+
+func ListSubscriptions(c *gin.Context) {
+    var subs []models.Subscription
+    query := db
+
+    if userID := c.Query("user_id"); userID != "" {
+        query = query.Where("user_id = ?", userID)
+    }
+    if service := c.Query("service_name"); service != "" {
+        query = query.Where("service_name ILIKE ?", "%"+service+"%")
+    }
+
+    if err := query.Find(&subs).Error; err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    c.JSON(http.StatusOK, subs)
+}
+
+func GetSummary(c *gin.Context) {
+    var total int64
+    query := db.Model(&models.Subscription{})
+
+    if userID := c.Query("user_id"); userID != "" {
+        query = query.Where("user_id = ?", userID)
+    }
+    if service := c.Query("service_name"); service != "" {
+        query = query.Where("service_name ILIKE ?", "%"+service+"%")
+    }
+    if start := c.Query("start_date"); start != "" {
+        t, _ := time.Parse("2006-01", start) // YYYY-MM
+        query = query.Where("start_date >= ?", t)
+    }
+    if end := c.Query("end_date"); end != "" {
+        t, _ := time.Parse("2006-01", end)
+        query = query.Where("end_date <= ?", t)
+    }
+
+    if err := query.Select("SUM(price)").Scan(&total).Error; err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{"total": total})
 }

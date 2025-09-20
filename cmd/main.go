@@ -1,29 +1,32 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"net/http"
+    "fmt"
+    "log"
 
-	"service/internal/config"
-	"service/internal/routes"
+    "service/internal/config"
+    "service/internal/routes"
+    "service/internal/database"
 
-	"github.com/gin-gonic/gin"
-	"service/internal/database"
+    "github.com/gin-gonic/gin"
 )
 
 func main() {
-	cfg := config.LoadConfig()
+    cfg := config.LoadConfig()
 
-	if err := database.InitDB(); err != nil {
-        log.Fatalf("Database connection failed: %v", err)
+
+    db := database.InitDB()
+    defer database.CloseDB()
+    _ = db 
+
+    router := gin.Default()
+    router.Use(gin.Recovery())
+    routes.SetupRoutes(router)
+
+    addr := fmt.Sprintf(":%s", cfg.AppPort)
+    log.Printf("🚀 Starting server on %s", addr)
+
+    if err := router.Run(addr); err != nil {
+        log.Fatal(err)
     }
-	router := gin.Default()
-	router.Use(gin.Recovery())
-	routes.SetupRouter()
-	
-	addr := fmt.Sprintf(":%s", cfg.AppPort)
-	log.Printf("Starting server on %s", addr)
-
-	http.ListenAndServe(addr, nil)
 }
