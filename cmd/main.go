@@ -12,21 +12,23 @@ import (
 )
 
 func main() {
-    cfg := config.LoadConfig()
+	cfg := config.LoadConfig()
+
+	db := database.InitDB(cfg.DBDsn)
+	defer database.CloseDB()
+	_ = db 
 
 
-    db := database.InitDB()
-    defer database.CloseDB()
-    _ = db 
+	router := gin.Default()
+	router.Use(gin.Recovery())
+	routes.SetupRoutes(router) 
 
-    router := gin.Default()
-    router.Use(gin.Recovery())
-    routes.SetupRoutes(router)
+	addr := fmt.Sprintf(":%s", cfg.AppPort)
+	log.Printf("🚀 Starting server on %s", addr)
 
-    addr := fmt.Sprintf(":%s", cfg.AppPort)
-    log.Printf("🚀 Starting server on %s", addr)
-
-    if err := router.Run(addr); err != nil {
-        log.Fatal(err)
-    }
+	if err := router.Run(addr); err != nil {
+		log.Fatal(err)
+	}
 }
+
+

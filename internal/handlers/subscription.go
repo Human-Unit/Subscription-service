@@ -11,9 +11,10 @@ import (
     "service/internal/models"
 )
 
-var db = database.GetDB() 
+ 
 
 func CreateSubscription(c *gin.Context) {
+	db := database.GetDB()
     var sub models.Subscription
     if err := c.ShouldBindJSON(&sub); err != nil {
         c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -33,6 +34,7 @@ func CreateSubscription(c *gin.Context) {
 
  
 func GetSubscription(c *gin.Context) {
+	db := database.GetDB()
     id := c.Param("id")
     var sub models.Subscription
 
@@ -45,6 +47,7 @@ func GetSubscription(c *gin.Context) {
 
  
 func UpdateSubscription(c *gin.Context) {
+	db := database.GetDB()
     id := c.Param("id")
     var sub models.Subscription
 
@@ -75,6 +78,7 @@ func UpdateSubscription(c *gin.Context) {
 
  
 func DeleteSubscription(c *gin.Context) {
+	db := database.GetDB()
     id := c.Param("id")
     if err := db.Delete(&models.Subscription{}, "id = ?", id).Error; err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -84,6 +88,7 @@ func DeleteSubscription(c *gin.Context) {
 }
 
 func ListSubscriptions(c *gin.Context) {
+	db := database.GetDB()
     var subs []models.Subscription
     query := db
 
@@ -102,6 +107,7 @@ func ListSubscriptions(c *gin.Context) {
 }
 
 func GetSummary(c *gin.Context) {
+	db := database.GetDB()
     var total int64
     query := db.Model(&models.Subscription{})
 
