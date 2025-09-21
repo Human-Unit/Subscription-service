@@ -1,3 +1,8 @@
+// @title Subscription Service API
+// @version 1.0
+// @description This is the API documentation for the subscription service.
+// @host localhost:8080
+// @BasePath /
 package main
 
 import (
@@ -8,7 +13,10 @@ import (
     "service/internal/routes"
     "service/internal/database"
 
-    "github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin"
+    ginSwagger "github.com/swaggo/gin-swagger"
+    swaggerFiles "github.com/swaggo/files"
+     _ "service/docs"
 )
 
 func main() {
@@ -18,8 +26,9 @@ func main() {
 	defer database.CloseDB()
 	_ = db 
 
-
 	router := gin.Default()
+
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	router.Use(gin.Recovery())
 	routes.SetupRoutes(router) 
 
