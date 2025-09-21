@@ -14,16 +14,15 @@ type Config struct {
 }
 
 func LoadConfig() *Config {
-	// Load .env if exists
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, relying on environment variables")
 	}
 
 	viper.AutomaticEnv()
 
-	// Defaults (useful if environment variables are missing)
 	viper.SetDefault("APP_PORT", "8080")
-	viper.SetDefault("DB_DSN", "postgres://user:1234@db:5432/mydb?sslmode=disable")
+	viper.SetDefault("DB_DSN", "postgres://user:1234@localhost:5432/mydb?sslmode=disable")
+
 
 	cfg := &Config{
 		AppPort: viper.GetString("APP_PORT"),

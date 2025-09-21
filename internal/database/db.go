@@ -16,8 +16,6 @@ var (
 	dbOnce sync.Once
 )
 
-// InitDB initializes the database connection and runs migrations.
-// Pass the DSN from your config (e.g., from LoadConfig().DBDsn)
 func InitDB(dsn string) *gorm.DB {
 	dbOnce.Do(func() {
 		var err error
@@ -30,7 +28,7 @@ func InitDB(dsn string) *gorm.DB {
 			log.Fatalf("[error] Migrations failed: %v", err)
 		}
 
-		log.Println("✅ Database connected and migrated successfully")
+		log.Println("Database connected and migrated successfully")
 	})
 	return db
 }
@@ -47,7 +45,7 @@ func runMigrations(gormDB *gorm.DB) error {
 	}
 
 	m, err := migrate.NewWithDatabaseInstance(
-		"file://db/migrations", // make sure your migrations folder is correctly mounted
+		"file://migrations", // make sure your migrations folder is correctly mounted
 		"postgres",
 		driver,
 	)

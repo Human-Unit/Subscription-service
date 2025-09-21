@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   app:
     build: .
@@ -7,21 +9,21 @@ services:
     depends_on:
       - db
     environment:
-      - APP_PORT=8080
+      - PORT=8080
       - DB_DSN=postgres://user:1234@db:5432/mydb?sslmode=disable
 
   db:
     image: postgres:15
     container_name: subscription_db
     restart: always
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: 1234
-      POSTGRES_DB: mydb
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+   environment:
+    POSTGRES_USER: user
+    POSTGRES_PASSWORD: 1234
+    POSTGRES_DB: mydb
+  ports:
+    - "5432:5432"
+  volumes:
+    - pgdata:/var/lib/postgresql/data
 
 volumes:
   pgdata:
