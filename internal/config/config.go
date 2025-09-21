@@ -31,7 +31,7 @@ func LoadConfig() *Config {
 
 	log.Printf("Loaded config: port=%s db=%s", cfg.AppPort, cfg.DBDsn)
 
-	// Optional: sanity check
+
 	if cfg.DBDsn == "" {
 		log.Fatal("DB_DSN is empty. Please set it in .env or Docker environment.")
 		os.Exit(1)

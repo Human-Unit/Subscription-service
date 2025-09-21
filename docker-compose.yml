@@ -1,29 +1,35 @@
-version: "3.9"
-
 services:
+  db:
+    image: postgres:15
+    container_name: postgres-container
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: subscription_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
   app:
     build: .
-    container_name: subscription_api
-    ports:
-      - "8080:8080"
+    container_name: subscription-service
+    restart: always
     depends_on:
       - db
     environment:
-      - PORT=8080
-      - DB_DSN=postgres://user:1234@db:5432/mydb?sslmode=disable
+      APP_PORT: 8080
+      DB_DSN: "host=db user=user password=1234 dbname=subscription_db port=5432 sslmode=disable"
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
 
-  db:
-    image: postgres:15
-    container_name: subscription_db
-    restart: always
-   environment:
-    POSTGRES_USER: user
-    POSTGRES_PASSWORD: 1234
-    POSTGRES_DB: mydb
-  ports:
-    - "5432:5432"
-  volumes:
-    - pgdata:/var/lib/postgresql/data
+      - go-mod-cache:/go/pkg/mod
+
+    command: ["go", "run", "cmd/main.go"]
 
 volumes:
-  pgdata:
+  db-data:
+  go-mod-cache:
